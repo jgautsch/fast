@@ -1,5 +1,6 @@
 # Used by "mix format"
 [
   import_deps: [:ecto, :absinthe],
-  inputs: ["{mix,.formatter}.exs", "{config,lib,test}/**/*.{ex,exs}"]
+  inputs: ["{mix,.formatter}.exs", "{config,lib,test}/**/*.{ex,exs}"],
+  plugins: [Fast.Absinthe.GraphqlFormatter]
 ]
