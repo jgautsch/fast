@@ -12,7 +12,7 @@ by adding `fast` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:fast, "~> 0.1.0"}
+    {:fast, "~> 0.3.0"}
   ]
 end
 ```
