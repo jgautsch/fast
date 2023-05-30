@@ -5,6 +5,12 @@ defmodule Fast.Utils.GoogleCloudLogger do
   Stackdriver logging to consider the logentry a ReportedErrorEvent.
   """
 
+  @behaviour LoggerJSON.Formatter
+
+  @impl true
+  def init(opts), do: LoggerJSON.Formatters.GoogleCloudLogger.init(opts)
+
+  @impl true
   def format_event(:error, msg, ts, md, md_keys, formatter_state) do
     base =
       LoggerJSON.Formatters.GoogleCloudLogger.format_event(
@@ -25,6 +31,7 @@ defmodule Fast.Utils.GoogleCloudLogger do
     )
   end
 
+  @impl true
   def format_event(level, msg, ts, md, md_keys, formatter_state) do
     LoggerJSON.Formatters.GoogleCloudLogger.format_event(
       level,
