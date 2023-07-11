@@ -15,7 +15,7 @@ defmodule Fast.Plug.RequestInfo do
     request_info = %RequestInfo{
       request_id: List.first(get_resp_header(conn, "x-request-id")),
       remote_ip: to_string(:inet_parse.ntoa(conn.remote_ip)),
-      host: List.first(get_req_header(conn, "host")),
+      host: conn.host,
       origin: List.first(get_req_header(conn, "origin")),
       referer: List.first(get_req_header(conn, "referer")),
       latitude: lat,
@@ -31,19 +31,20 @@ defmodule Fast.Plug.RequestInfo do
     header = Keyword.get(opts, :geo_header, @default_geo_header)
 
     case get_req_header(conn, header) do
-      [] ->
-        [nil, nil]
+      [latlong] when is_binary(latlong) ->
+        if String.contains?(latlong, ",") do
+          String.split(latlong, ",")
+          |> Enum.map(&Float.parse/1)
+          |> Enum.map(fn
+            :error -> nil
+            {f, _} -> f
+          end)
+        else
+          [nil, nil]
+        end
 
-      [""] ->
+      _ ->
         [nil, nil]
-
-      [latlong] ->
-        String.split(latlong, ",")
-        |> Enum.map(&Float.parse/1)
-        |> Enum.map(fn
-          :error -> nil
-          {f, _} -> f
-        end)
     end
   end
 

@@ -190,7 +190,7 @@ defmodule Fast.Ecto.Changeset do
         field,
         opts
       ) do
-    hash_key = Keyword.get(opts, :hash_key, :password_hash)
+    hash_key = Keyword.get(opts, :hash_key, :hashed_password)
     clear_fields = Keyword.get(opts, :clear, [])
 
     if field in Map.keys(changes) do
