@@ -2,7 +2,15 @@ defmodule Fast.RepoTest do
   use ExUnit.Case, async: true
 
   defmodule Mock.Ecto.Repo do
-    def transaction(fun, _opts), do: fun.()
+    def transaction(fun, _opts) do
+      case fun.() do
+        :error -> {:error, :transaction_rollback_error}
+        {:error, error} -> {:error, error}
+        :ok -> :ok
+        val -> {:ok, val}
+      end
+    end
+
     def rollback(reason), do: {:error, reason}
     def query(_sql, _params), do: {:ok, %{rows: []}}
     def preload(_query, _preloads), do: {:ok, []}
@@ -13,7 +21,7 @@ defmodule Fast.RepoTest do
     use Fast.Repo, otp_app: :fast, repo_module: Mock.Ecto.Repo
   end
 
-  describe "transact/2" do
+  describe inspect(&Repo.transact/1) do
     test "commits the transaction if the lambda returns {:ok, result}" do
       assert {:ok, 123} ==
                Test.Repo.transact(fn ->

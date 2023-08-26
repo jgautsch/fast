@@ -27,10 +27,23 @@ defmodule Fast.Repo do
         @repo.transaction(
           fn ->
             case fun.() do
-              {:ok, value} -> {:ok, value}
-              :ok -> :ok
-              {:error, reason} -> @repo.rollback(reason)
-              :error -> @repo.rollback(:transaction_rollback_error)
+              {:ok, value} ->
+                value
+
+              :ok ->
+                :ok
+
+              {:error, reason} ->
+                @repo.rollback(reason)
+
+              :error ->
+                @repo.rollback(:transaction_rollback_error)
+
+              res ->
+                raise(
+                  ArgumentError,
+                  "Expected `fun` to return `{:ok, value}`, `:ok`, `{:error, reason}`, or `:error`, but got #{inspect(res)}"
+                )
             end
           end,
           opts
