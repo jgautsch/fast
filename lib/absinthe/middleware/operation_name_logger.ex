@@ -1,4 +1,4 @@
-defmodule Fast.Absinthe.OperationNameLogger do
+defmodule Fast.Absinthe.Middleware.OperationNameLogger do
   @behaviour Absinthe.Middleware
 
   alias Absinthe.Blueprint.Document.Operation

@@ -19,11 +19,19 @@ defmodule Fast.Auth do
     - `:features` - A subset of features.
   """
 
-  @callback handle_login_success(user :: any(), context :: map()) :: any()
-  @callback handle_login_failure(user :: any(), context :: map()) :: any()
+  @type login_method :: :password | :magic_link | :saml_sso
+
+  @callback handle_login_success(user :: any(), method :: login_method(), context :: map()) ::
+              any()
+  @callback handle_login_failure(user :: any(), method :: login_method(), context :: map()) ::
+              any()
+  @callback verify_login_allowed(user :: any(), method :: login_method(), context :: map()) ::
+              :ok | {:error, any()}
+
   @optional_callbacks [
-    handle_login_success: 2,
-    handle_login_failure: 2
+    verify_login_allowed: 3,
+    handle_login_success: 3,
+    handle_login_failure: 3
   ]
 
   @valid_features [
@@ -98,17 +106,19 @@ defmodule Fast.Auth do
         Fast.Auth.ensure_fields_present!(:passwords, @auth_schema)
 
         def login_with_password(user, password, context) do
-          with :ok <- allow_login?(user),
+          method = :password
+
+          with :ok <- verify_login_allowed(user, method, context),
                {:ok, user} <- Bcrypt.check_pass(user, password, hash_key: @hashed_password_field) do
             {:ok, jwt, _} = @guardian_module.encode_and_sign(user, %{}, ttl: {200_000, :seconds})
 
-            handle_login_success(user, context)
+            handle_login_success(user, method, context)
 
             {:ok, %{jwt: jwt, user: @repo.reload(user)}}
           else
             error ->
               if !is_nil(user) do
-                handle_login_failure(user, context)
+                handle_login_failure(user, method, context)
               end
 
               case error do
@@ -153,7 +163,7 @@ defmodule Fast.Auth do
         # feature functions here...
       end
 
-      def logout(jwt) do
+      def revoke(jwt) do
         @guardian_module.revoke(jwt)
       end
 
@@ -163,10 +173,9 @@ defmodule Fast.Auth do
         end
       end
 
-      def allow_login?(nil), do: {:error, :nil_user}
-      def allow_login?(%{locked_from_failed_login_attempts: true}), do: {:error, :account_locked}
-      def allow_login?(%{active: false}), do: {:error, :account_inactive}
-      def allow_login?(_user), do: :ok
+      # NB: Replacing these with `verify_login_allowed/3`
+      # def allow_login?(nil, _method, _context), do: {:error, :nil_user}
+      # def allow_login?(_user), do: :ok
     end
   end
 

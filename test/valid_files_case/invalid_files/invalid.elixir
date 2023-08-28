@@ -1,0 +1,6 @@
+# This file has a .elixir extension (intentionally invalid) so that
+# `mix format` doesn't try to format it.
+[
+  a: "a"
+  b: "b"
+]
