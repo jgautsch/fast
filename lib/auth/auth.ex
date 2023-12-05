@@ -94,6 +94,8 @@ defmodule Fast.Auth do
       @repo Keyword.fetch!(opts, :repo)
       @hashed_password_field Keyword.fetch!(opts, :hashed_password_field)
       @guardian_module Keyword.fetch!(opts, :guardian_module)
+      @access_token_ttl Keyword.fetch!(opts, :access_token_ttl)
+      @refresh_token_ttl Keyword.fetch!(opts, :refresh_token_ttl)
 
       Fast.Auth.ensure_valid_features!(__MODULE__, @auth_features)
 
@@ -102,6 +104,46 @@ defmodule Fast.Auth do
       def auth_otp_app, do: @otp_app
       def auth_repo, do: @repo
 
+      def refresh_token(refresh_token, context) do
+        with {:ok, claims} <- @guardian_module.decode_and_verify(refresh_token),
+             {:ok, resource} <- @guardian_module.resource_from_claims(claims),
+             :ok <- verify_login_allowed(resource, :refresh_token, context) do
+          token_pair = generate_token_pair(resource)
+          {:ok, %{token_pair: token_pair, resource: @repo.reload(resource)}}
+        end
+      end
+
+      def revoke_all_tokens(resource) do
+        @guardian_module.revoke_all(resource)
+      end
+
+      def generate_token_pair(resource) do
+        %Fast.Auth.TokenPair{
+          access_token: generate_access_token(resource),
+          refresh_token: generate_refresh_token(resource)
+        }
+      end
+
+      def generate_access_token(resource) do
+        {:ok, access_token, _claims} =
+          @guardian_module.encode_and_sign(resource, %{},
+            token_type: "access",
+            ttl: @access_token_ttl
+          )
+
+        access_token
+      end
+
+      def generate_refresh_token(resource) do
+        {:ok, refresh_token, _claims} =
+          @guardian_module.encode_and_sign(resource, %{},
+            token_type: "refresh",
+            ttl: @refresh_token_ttl
+          )
+
+        refresh_token
+      end
+
       if :passwords in @auth_features do
         Fast.Auth.ensure_fields_present!(:passwords, @auth_schema)
 
@@ -109,12 +151,12 @@ defmodule Fast.Auth do
           method = :password
 
           with :ok <- verify_login_allowed(user, method, context),
-               {:ok, user} <- Bcrypt.check_pass(user, password, hash_key: @hashed_password_field) do
-            {:ok, jwt, _} = @guardian_module.encode_and_sign(user, %{}, ttl: {200_000, :seconds})
-
+               {:ok, user} <- check_pass(user, password, hash_key: @hashed_password_field) do
             handle_login_success(user, method, context)
 
-            {:ok, %{jwt: jwt, user: @repo.reload(user)}}
+            token_pair = generate_token_pair(user)
+
+            {:ok, %{token_pair: token_pair, resource: @repo.reload(user)}}
           else
             error ->
               if !is_nil(user) do
@@ -130,6 +172,39 @@ defmodule Fast.Auth do
                   error
               end
           end
+        end
+
+        def check_user_password(user, password), do: check_pass(user, password, hash_key: @hashed_password_field)
+
+        def check_pass(user, password, opts \\ [])
+
+        def check_pass(nil, _password, opts) do
+          unless opts[:hide_user] == false, do: Bcrypt.no_user_verify(opts)
+          {:error, "invalid user-identifier"}
+        end
+
+        def check_pass(user, password, opts) when is_binary(password) do
+          case get_hash(user, opts[:hash_key]) do
+            {:ok, hash} ->
+              if Bcrypt.verify_pass(password, hash),
+                do: {:ok, user},
+                else: {:error, "invalid password"}
+
+            _ ->
+              {:error, "no password hash found in the user struct"}
+          end
+        end
+
+        def check_pass(_, _, _) do
+          {:error, "password is not a string"}
+        end
+
+        defp get_hash(%{password_hash: hash}, nil), do: {:ok, hash}
+        defp get_hash(%{encrypted_password: hash}, nil), do: {:ok, hash}
+        defp get_hash(_, nil), do: nil
+
+        defp get_hash(user, hash_key) do
+          if hash = Map.get(user, hash_key), do: {:ok, hash}
         end
       end
 

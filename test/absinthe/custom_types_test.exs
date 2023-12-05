@@ -205,11 +205,11 @@ defmodule FastWeb.Schema.CustomTypesTest do
 
   describe ":json" do
     test "serializes a Map" do
-      assert ~s({"test":["json",{"other":"thing","value":2}]}) ==
+      assert ~s({"test":["json",{"value":2,"other":"thing"}]}) ==
                serialize(:json, %{test: ["json", %{value: 2, other: "thing"}]})
 
       assert ~s({"test":["json",{"other":"thing","value":2}]}) ==
-               serialize(:json, %{"test" => ["json", %{"value" => 2, "other" => "thing"}]})
+               serialize(:json, %{"test" => ["json", %{"other" => "thing", "value" => 2}]})
     end
 
     test "serializes a string" do

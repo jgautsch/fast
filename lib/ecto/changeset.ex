@@ -199,7 +199,7 @@ defmodule Fast.Ecto.Changeset do
 
       changeset
       |> Map.put(:changes, changes)
-      |> change(Bcrypt.add_hash(value, hash_key: hash_key))
+      |> change(%{hash_key => Bcrypt.hash_pwd_salt(value)})
     else
       changeset
     end

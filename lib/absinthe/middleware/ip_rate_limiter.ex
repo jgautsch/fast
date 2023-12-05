@@ -21,7 +21,10 @@ defmodule Fast.Absinthe.Middleware.IpRateLimiter do
         end
 
       _ ->
-        Logger.warn("[Fast.Absinthe.Middleware.IpRateLimiter]: Request info not found in context")
+        Logger.warning(
+          "[Fast.Absinthe.Middleware.IpRateLimiter]: Request info not found in context"
+        )
+
         resolution
     end
   end

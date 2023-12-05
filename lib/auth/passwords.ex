@@ -9,10 +9,6 @@ defmodule Fast.Auth.Passwords do
     {:error, :account_locked}
   end
 
-  def verify_password(user_struct, password) do
-    Bcrypt.check_pass(user_struct, password)
-  end
-
   def create_session(user, password) when is_binary(password) do
     case user do
       nil ->
