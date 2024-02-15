@@ -96,6 +96,42 @@ defmodule Fast.Ecto.ChangesetTest do
     end
   end
 
+  describe inspect(&Fast.Ecto.Changeset.encode_www_form/2) do
+    test "encodes text" do
+      cs =
+        %Contact{}
+        |> Contact.changeset(%{phone: "funky: it+й"})
+        |> Fast.Ecto.Changeset.encode_www_form([:phone])
+
+      assert cs.changes.phone == "funky%3A+it%2B%D0%B9"
+
+      cs =
+        %Contact{}
+        |> Contact.changeset(%{phone: "normal"})
+        |> Fast.Ecto.Changeset.encode_www_form([:phone])
+
+      assert cs.changes.phone == "normal"
+    end
+  end
+
+  describe inspect(&Fast.Ecto.Changeset.slugify/2) do
+    test "slugifies text" do
+      cs =
+        %Contact{}
+        |> Contact.changeset(%{phone: "Spoon & $ ,Fork.PNG"})
+        |> Fast.Ecto.Changeset.slugify([:phone])
+
+      assert cs.changes.phone == "spoon-and-fork.png"
+
+      cs =
+        %Contact{}
+        |> Contact.changeset(%{phone: "normal"})
+        |> Fast.Ecto.Changeset.slugify([:phone])
+
+      assert cs.changes.phone == "normal"
+    end
+  end
+
   defp errors_on(changeset) do
     Ecto.Changeset.traverse_errors(changeset, fn {message, opts} ->
       Regex.replace(~r"%{(\w+)}", message, fn _, key ->

@@ -24,10 +24,8 @@ defmodule Fast.Pagination do
           {:ok, %{cursor: nil, items: items, end_of_list: end_of_list}}
 
         items when is_list(items) and length(items) > 0 ->
-          cursor =
-            items
-            |> Enum.at(-1)
-            |> get_cursor(opts)
+          extra_item = Enum.at(items, -1)
+          cursor = get_cursor(extra_item, opts)
 
           {:ok, %{cursor: cursor, items: items, end_of_list: end_of_list}}
       end

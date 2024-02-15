@@ -62,4 +62,22 @@ defmodule Fast.StringTest do
       assert "Main Ave, Suite 300" == Fast.String.inflect_address_acronyms("Main Avenue, Ste 300")
     end
   end
+
+  describe inspect(&Fast.String.slugify/1) do
+    test "handles nil" do
+      assert nil == Fast.String.slugify(nil)
+    end
+
+    test "empty string" do
+      assert "" == Fast.String.slugify("")
+    end
+
+    test "string with no symbols" do
+      assert "some-string" == Fast.String.slugify("some string")
+    end
+
+    test "strings with symbols and spaces" do
+      assert "spoon-and-fork.png" == Fast.String.slugify("Spoon & $ ,Fork.PNG")
+    end
+  end
 end

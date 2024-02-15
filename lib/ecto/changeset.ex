@@ -68,6 +68,34 @@ defmodule Fast.Ecto.Changeset do
     end
   end
 
+  def encode_www_form(changeset, fields) do
+    fields
+    |> Enum.reduce(changeset, fn field, changeset ->
+      case get_field(changeset, field) do
+        nil ->
+          changeset
+
+        str when is_binary(str) ->
+          changeset
+          |> put_change(field, URI.encode_www_form(str))
+      end
+    end)
+  end
+
+  def slugify(changeset, fields) do
+    fields
+    |> Enum.reduce(changeset, fn field, changeset ->
+      case get_field(changeset, field) do
+        nil ->
+          changeset
+
+        str when is_binary(str) ->
+          changeset
+          |> put_change(field, Fast.String.slugify(str))
+      end
+    end)
+  end
+
   def inflect_title_acronyms(changeset, field) do
     case get_field(changeset, field) do
       nil ->
