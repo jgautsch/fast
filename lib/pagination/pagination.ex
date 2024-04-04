@@ -25,7 +25,7 @@ defmodule Fast.Pagination do
 
         items when is_list(items) and length(items) > 0 ->
           extra_item = Enum.at(items, -1)
-          cursor = get_cursor(extra_item, opts)
+          cursor = get_cursor(extra_item, items, opts)
 
           {:ok, %{cursor: cursor, items: items, end_of_list: end_of_list}}
       end
@@ -60,16 +60,19 @@ defmodule Fast.Pagination do
     )
   end
 
-  def get_cursor(item, opts \\ []) do
+  defp get_cursor(extra_item, items, opts) do
     # NB: Yes, this could be written in a more "clever" way, but it's already funny
     #     enough with the function-as-option, so I'm intentionally writing it to
     #     be super explicit.
     case Access.get(opts, :get_cursor) do
       nil ->
-        item.id
+        extra_item.id
 
-      fun ->
-        fun.(item)
+      func when is_function(func) ->
+        case :erlang.fun_info(func)[:arity] do
+          1 -> func.(extra_item)
+          2 -> func.(extra_item, items)
+        end
     end
   end
 end
