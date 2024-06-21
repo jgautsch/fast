@@ -119,17 +119,16 @@ defmodule Fast.Auth do
 
       def generate_token_pair(resource) do
         %Fast.Auth.TokenPair{
-          access_token: generate_access_token(resource, @access_token_ttl),
-          refresh_token: generate_refresh_token(resource),
-          expires_in: @access_token_ttl
+          access_token: generate_access_token(resource),
+          refresh_token: generate_refresh_token(resource)
         }
       end
 
-      def generate_access_token(resource, ttl \\ @access_token_ttl) do
+      def generate_access_token(resource) do
         {:ok, access_token, _claims} =
           @guardian_module.encode_and_sign(resource, %{},
             token_type: "access",
-            ttl: ttl
+            ttl: @access_token_ttl
           )
 
         access_token
