@@ -56,7 +56,7 @@ defmodule Fast.Pagination do
 
           {[page], next_acc}
       end,
-      fn %{} -> %{} end
+      fn _ -> %{} end
     )
   end
 
